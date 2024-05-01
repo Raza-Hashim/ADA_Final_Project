@@ -1,0 +1,194 @@
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import string
+import subprocess
+
+def rabin_karp_matcher(text, pattern, n, m, q=101, d=256):
+    h = pow(d, m - 1, q)
+    p = 0
+    t = 0
+    for i in range(m):
+        p = (d * p + ord(pattern[i])) % q
+        t = (d * t + ord(text[i])) % q
+
+    matches = []
+    for s in range(n - m + 1):
+        if p == t and pattern == text[s:s + m]:
+            matches.append(s)
+
+        if s < n - m:
+            t = (d * (t - ord(text[s]) * h) + ord(text[s + m])) % q
+            if t < 0:
+                t += q
+
+    return matches
+
+# NO_OF_CHARS = 256
+# def badCharHeuristic(string, size):
+#     badChar = [-1] * NO_OF_CHARS
+#     for i in range(size):
+#         badChar[ord(string[i])] = i
+#     return badChar
+
+# def preprocess_strong_suffix(shift, bpos, pat, m):
+#     i = m
+#     j = m + 1
+#     bpos[i] = j
+#     while i > 0:
+#         while j <= m and pat[i - 1] != pat[j - 1]:
+#             if shift[j] == 0:
+#                 shift[j] = j - i
+#             j = bpos[j]
+#         i -= 1
+#         j -= 1
+#         bpos[i] = j
+
+# def preprocess_case2(shift, bpos, pat, m):
+#     j = bpos[0]
+#     for i in range(m + 1):
+#         if shift[i] == 0:
+#             shift[i] = j
+#         if i == j:
+#             j = bpos[j]
+
+# def BM(text, pat, n, m):
+#     badChar = badCharHeuristic(pat, m)
+#     bpos = [0] * (m + 1)
+#     shift = [0] * (m + 1)
+#     preprocess_strong_suffix(shift, bpos, pat, m)
+#     preprocess_case2(shift, bpos, pat, m)
+#     s = 0
+#     while s <= n - m:
+#         j = m - 1
+#         while j >= 0 and pat[j] == text[s + j]:
+#             j -= 1
+#         if j < 0:
+#             print("Pattern occurs at shift = {}".format(s))
+#             s += shift[0]
+#         else:
+#             bad_char_shift = j - badChar[ord(text[s + j])]
+#             good_suffix_shift = shift[j + 1]
+#             s += max(1, max(bad_char_shift, good_suffix_shift))
+
+# def naive_string_matcher(text, pattern, n, m):
+#     for s in range(n - m + 1):
+#         if pattern[:m] == text[s:s+m]:
+#             pass  # Do nothing, remove print statement for timing
+
+# def compute_prefix_function(pattern, m):
+#     prefix = [0] * m
+#     k = 0
+#     for q in range(1, m):
+#         while k > 0 and pattern[k] != pattern[q]:
+#             k = prefix[k-1]
+#         if pattern[k] == pattern[q]:
+#             k += 1
+#         prefix[q] = k
+#     return prefix
+
+# def kmp_matcher(text, pattern, n, m):
+#     prefix = compute_prefix_function(pattern, m)
+#     q = 0
+#     for i in range(n):
+#         while q > 0 and pattern[q] != text[i]:
+#             q = prefix[q-1]
+#         if pattern[q] == text[i]:
+#             q += 1
+#         if q == m:
+#             pass  # Do nothing, remove print statement for timing
+#             q = prefix[q-1]
+
+def generate_random_string(length):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+def generate_random_pattern(string, pattern_length):
+    start_index = random.randint(0, len(string) - pattern_length)
+    return string[start_index:start_index + pattern_length]
+
+def generate_random_strings(num_strings):
+    string_lengths = np.geomspace(10000, 1000000, num_strings, dtype=int)
+    strings = [generate_random_string(length) for length in string_lengths]
+    patterns = [generate_random_pattern(string, random.randint(4, 22)) for string in strings]
+    return strings, patterns, string_lengths
+
+
+# # Generate random strings and patterns
+num_strings = 20
+strings, patterns, string_lengths = generate_random_strings(num_strings)
+
+
+# texts = [
+#     'CYHH9vPYaWVbPQWyB4BnIugQqoJh1QoxY9jyoMvUuecIfbcA8CrBufO4DjqU6fsVtZDu6ML66GhnnSypblsybAqP3Jq808pEa9L6BtDcfh3DDZNHSYgVYeX3pWEvl9LpcvMQIia0Yw5keEZAANB1Ym4UI049MfRZCZZwjJlnsp1siiQ8LexyNMOyMEvesQbm1noF1hytRkH5dvSdajgJVKXFAlTza5PyYIYFBRHTaZbprf3QsIN5AtbMhbiCVSG6FeMC3yWs9Um8VKA3eOITxuLuAq3VLdSgi2YdBdvTxJEzA0XvR4SRtFaCBQTFOArbVz26yWbU0WjGL3fjQrMJ2b0HE7EV8EYgkII9v7bXGwkP4XjDPpGC30Pv36cH4zTLJ36TFxLdlw64A3GmHHo3wgTyDqBItbYfy3vMXtezfDIMw2MKKAtPuKx6tkFsAg558uzKQYd1EfYrRhL0JqmW50kEOW9eEAlRU1vPzHr4pvVrOByiMYpHcI38tC6qJMIQb5z6OIdIWAJRc8ko3vbUa44BXqjgHouFsqN2KHOQpnzfkjV2ovKa4BVicay9GNJiujyd75Lg3L4g12Ua8tJD7xw1yeDfYTHMueCBxUyUujNu8vneTeXWGJRZ8AmLMUbXBuQjwI4170J277LQujm0qomDrPLmTvIU8iBL4y9QY0uLok3JqGXybgJg1gXfYPvPJcWBiifGduH4A0yc7caIHBuzv95oLAf5Cdowc7pqntp2wH3ywNe9v9qBcBNoAT41J0G7CceTnFhVGEaBC2rZAer9L7JZ75bErVScefGZ2rqRYPBb3Aw8gIsjkN2EmjXlRx3KQLBRhKchFKWOICuyFeRoiwvj01u7JWGnk0b13EX3GFgh3oRr25J09WCTkSo2zNaJ0sAu2NhFIzpZxdFIu3CCL6GHNTgpvLnQ9foWQFyXYSTWGjtYqzeZ3cF8VLYGDjBo28DGELdIqfMkoZpXTeBgO7KmhBhg41F0BGpKSTHM5HbVDxex4H8MreyNjcf3WolipLk8RvXub5JfURW2B1pDgiyqhb4T06Kc8tc3TMcSVoHzk5ndRcA0aj'
+#     ,'TMKC4g8ZGlhyWCqGfwlzbrH1BtEjlXAYZ7EWzYI9yaGRQ0Af4h64pm6u2NelNo7FHKOL52lqu91K3h2FQa5w4BkD9V6nHGWwnVtb6Nki2YcHfCYwTuDtWJFZQv7Fv1WViV3TEODoMBzOY6Zz7h40tFdnzXlLrUzEZYNZTYtbQbJ0uVJyDB2pcOLzTDcUIHM7Z68oy0wtVTYKUoxyhn6SWpRBArBtO1QUO48HlsiBKCePwY71UEnnV6X37x9H3sY58qeTjsWc0qPbMM3Oms3BvHjnJJJKvXCTo1sEvqrvit8vTbgxqdBR9CjqbLKeSC7egUAEPIv7Fu9amX6yDNLfIcP9KVcHag1zVZOLdHSkvCjOJhO6e5jF7eF7tHwhlslPxDyDYGokes8FmcOR8QgmOcpczttcRdRhOUc7Qs7eKnZIknnqXI4AsbjYHo6VkD0n4x0OvTK2iCNgaYlUmvkiNAxGGlgHtqpItq0iI76Hc9opCh6aEKO8tlc8AAI6rfDQRLtrvXAHhoxJjEVcKmMX3iR39IIlnMKZgw1RKjIrNirDMNX9xtHlrEuOmzo2eq6xlXSg3ui6wX4YYVKe9BKJS4Jj9bUgCT8tBOsMC7SBD5xccCYPa5xjaLnEHImcPKUtVOJUkiVIc6dq8ssoMaM8MoIXHRDBYHve7Oy7eVDBDjBXAE1IpHZPUHkoIwCjxw0E8etmSdZkbQIUeBe3p7o87ql7hi6Mw5N8A0IPwP3u5zMFZhs1bLTPM9b0MKumgw75HXoO5yJtHCyMRHbJuemnVvNg5tho4WwY9VwVPsql0CIjspmkB3hg5Wmjn5mEfSucMSYGpvLnEstRtubCJD8Jzk9Wa2AJ54FjPeafhGbsGb6zyoLbM8II6lqZ5yAAu3SWaCapJGZTmLX4UFYofZrcAncDi0G1Ro23v4YtKEQISjTB5qGs3MpKmbKPAT1NxSRkYbsB5Hkwf3WsM4iK8AmGp0oZwvC87tiVPT8Ou04PywL1SMONkpkcvDM5RbqJC93irMXoHAXRsJ9p8yyJeRPsOzOSYCfAq6tYXI51AlgwKpHaFeHhhlX37n7P0LgQ66xSQsWjizTveOfYkmduRgaGiT3J4c87YWiBFUUNPAkKB5tbebUsG6ggMxMQbUumDJEQHXSJvdkKq873wELHXSFNiRaaqskbsxdE4n2O0lqehvsNGMgRSLN9feG3aQAq7ng3DE1g4aySd3oUWIGyLYPSED0rngDvAUvFKKwRZMgYIyv37Qw1UFPE4f3on71UwlnOoqByWPGVeruENNcDPeg1cMwhALEUa5PGO75iaLHR4JAku366spz1jex8CfYmvZA5ghyVRjP4htyiFyftYCJnr7bKfKnlqm5g9CR7EznFxsZTMquODmf1c1tBjCH0fe7vOs9rbZdhaEcc1Z62HHNcCYzRhnXeSWgYc5SIQnwZmZtlCWw52eznK8Za1ed2vwV7deyW2LjYfCryhT0tb7rnKijIPmHE2PTKvDSBXdgcJGcS34Bah34NjlDzY6nJNt2jUnec3dR9PDQAO2ay4FSO78yfWBhjKXTpVAqIDtAehb3HI1C2MFHFmZLrXP3XfjRpqyllWDdyW95HRMU0jDPWc1DcKVjWiSGuC75pSeBS9ToktG1U4nDrjXh5xSXfZU8E5k7H5KrwLpdnh9Ii3byI0f1lVgcHefB1qAcIqE'
+#     ,'cWOyrjemMXtk5aIqC3UghF9NXJVEmbq7Rv6UyykIFzrGwp0chsAhLDMG8zYbRc26S7CVZzskG2Mw73mYRk8o3cOcbkbLSClwBBLVXQUA3RZ4Z4iRJHkEDSptyEaVquyycfCkI3Fo25M1FvZSgqW4e25ciBj1outry0ko8abk8bw7L4KyVDZ6hiuDQu5VZ6mBCFUTnYaUjx8pfTSONul3pgptR6FKHQA9AD3nqa7PhAhNIYrpzSBE5dy8pDOv4JmYMZpLLYbFBSYDWJroly2OgNAjn0MUBgSGbOnyCFroYCfMheUBxOYHutm3f6nmFOsshPy3vSkevnqrVMu52q1QRYDbRksBc1vMXZIIR2nw8fH9qjXXAjMJZkrn6RQFRyeTsrwHqjZOpCiOTU9f5zAGTqtG0kpdevleI4dn3BijMJdOuuE6g9tTAZdMg80JDjbzn7uEM9MDLZ0tilc7v9GCAlYzEkz3LPSF1oRQRxjenWorP9OWhWRbGCPIApm8urkoGgTSNH3D0M2GQCuZgBHie9NCsPjfB4nA2ekbw3p8Z6LpD7b94y8nbQLFTJWbgmofNByjpNj5OSZSypbHnfvoW1BqRepFu3Iig2Un8qKIDKngNwKkZQcPgJ1XLzvPRyOzk2IRnpdrxcpLTssriIOFBBNyqD0sY6ytAE8YI3Iznt6e0YxqZDrwN2AAPPv44NQ2YRmm9xUoRTBo74FF3FTyB26sxVtA6GNrWOTWIsB43sQbfkhDeS6bolqQodpgGjkLwyxavYGgOPef7p9MG9zVJdDjF0QINOm4525k2z0tzbgq3M4PJeybNXRCfYNRvgp8rGv0v3eSh3LcpDL4d8pU8PV4ko3B4MhpZi0fM4lsOXGmgtYvgLUq6fktjiIb1gRoicruSpEIXHcWVRODzFHXS1idANlQhVbU2aQKG6WPTaj7MiqWpad43NXJkkMsbQQib4kovTaW8ngcs0rod9cXrm6iUXYsuiNActi08Nq10HFt6uTX7wnEsBJXrY2HGZh1B46UxAobtBCko0mqYyqBZFfnBNqdbF925O2P8RbZKMd811YTdgJX9Ljb7Zm0gfFV7wvM6Vg0FOGP031qm9PVoNajo8ELSJLGUzkyzWSMJqw77IRI7Dy9pJBh1XOZ4bQyJlNVL8HnDD5vecexsFhLMOz92PD4KI1L2OfJox34EZB8j1jtkXGvXxPa51SAYJU46kUlYJ3WGaxPkO99iUQNhaja3qXGlT482kS2n9V5bljZ71pBp1mUsw3spOq3nLDKp4Heunefn3UXYCtex2fPzF6RmRSeoPtN5gZrjONKSBsDaCEU7OL3JjP0usMR8asoOwniK96PJ81QzjmVsUuMKsLhQNFHRTXVWCDn7GpxxKcT3YuYaHoQuP1yCoSEsbSprU5DHH4NTPfIqXymget3fb2R0a0ADH3QyU6rF8Ijdq8p7yuDddogwbf1Ahi7qis4xqjHsazX94ax4o0wHKEpLpwgR6lHcFATiuEytwIDJDfvW7iDsP7ChgUCMQHnObBcAYg2WnWy4VSwmXly0gunyxIPKc4AvLRM3vidESjU0qgJKzO6pimI07C444hcZNjTmxQzwjQ35m3G4PaTLURidJ2LAqJPONm4MWMczfWSPZeRfcPpN1K30DAfD1ZO2XBkYASe2HwXBZQ2wMYM5xUphhx3f0AWJ97W0roviqKakDyXUVN7fJ71IkCOfLsdhs8jLbCFEHK2aZvrkgvUA0Ph1JL2y5D75bcu4MAw8obWR4Gdf0rY31aLSnpYjZp1cHkfAwgGgH31lBEjIZEATU23eN6bRAsvK8xFMhIEaPuMsPlMi7mH02cDhRQGMjpmGag9Ws496G4JbWyZQH3mHfOTPWRbJWgPG3zpmVLn9Vqzgb7weBlPLYAwIVORR0NT7DHm4nJcOsVj5aQBj98b7aVCSejrnQpQPeCbtbGc9isGm0wBaOSmYcrzpsEi61Cp5LiAcy2lUcnl2UKiITvqn0ArutNnE7vZTw22aUKMR9sP3lnDDjhslBmNXd3fWXw2Zonulg5KkTbXAtg33osgJXNVmnMTNH54KnvMUbn6FQGPGAX69rgkdnlg0cNcPT51j1bH'
+#     ,'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'
+#     ,'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'
+# ]
+# patterns = [
+#     'HH',
+#     'oO',
+#     '3R',
+#     '0',
+#     'O'
+# ]
+# Define lists to store timing results
+# bm_times = []
+# naive_times = []
+# kmp_times = []
+normal_times = []  # Fill this with timings from C++ implementation
+rabin_karp_times = []  # Fill this with timings from C++ implementation
+
+# Run each algorithm for each test case
+for i in range(num_strings):
+    text = strings[i]
+    pattern = patterns[i]
+    n = len(text)
+    m = len(pattern)
+    
+    # # Run Boyer Moore
+    # start_time = time.time()
+    # BM(text, pattern, n, m)
+    # bm_times.append(time.time() - start_time)
+    
+    # # Run Naive
+    # start_time = time.time()
+    # naive_string_matcher(text, pattern, n, m)
+    # naive_times.append(time.time() - start_time)
+    
+    # # Run KMP
+    # start_time = time.time()
+    # kmp_matcher(text, pattern, n, m)
+    # kmp_times.append(time.time() - start_time)
+
+    # Run RK - Normal
+    start_time = time.time()
+    rabin_karp_matcher(text, pattern, n, m)
+    normal_times.append(time.time() - start_time)
+
+    # Run C++ Rabin Karp and capture its timing
+    rabin_karp_start_time = time.time()
+    process = subprocess.Popen(["./rk_executable", text, pattern], stdout=subprocess.PIPE)
+    process.communicate()
+    rabin_karp_times.append(time.time() - rabin_karp_start_time)
+
+
+# Plot the results
+# plt.plot(bm_times, label='Boyer Moore')
+# plt.plot(naive_times, label='Naive')
+# plt.plot(kmp_times, label='KMP')
+# plt.plot(rabin_karp_times, label='Rabin Karp (C++)')
+# plt.plot(string_lengths, naive_times, marker='o', label='Naive Matcher')
+# plt.plot(string_lengths, kmp_times, marker='x', label='KMP Matcher')
+# plt.plot(string_lengths, bm_times, marker='x', label='BM Matcher')
+plt.plot(string_lengths, rabin_karp_times, marker='x', label='RK Matcher (C++)')
+plt.plot(string_lengths, normal_times, marker='x', label='RK Matcher (Python)')
+# Plot C++ Rabin Karp timings as well if available
+
+plt.xlabel('Text Length')
+plt.ylabel('Time (seconds)')
+plt.title('Rabin-Karp Performance')
+plt.legend()
+plt.grid(True)
+plt.show()
